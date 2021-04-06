@@ -4,18 +4,20 @@ import numpy as np
 from matplotlib import pyplot as plt
 MODEL = "BGI"
 STEPS_NUMBER = 1000  # 1000
+BIRTH_COEFFICIENT = 1000  # 400
 # BGI constants
 # ##############
 EPS = 0.02
 A = 1.0
 D = 0.75
-BGI_BIRTH_COEFFICIENT = 1000  # 400
 DT = 1e12
 # ##############
+B_TAU = 1e6  # in years
 REAL_P_NUMBERS = [64, 179, 232, 258, 223, 220, 165, 125, 124, 102, 88, 58, 91, 64, 38, 32, 35, 30, 26, 24, 0]
 REAL_P_N_SUM = 2178
 REAL_P_DOT_NUMBERS = [242, 265, 161, 91, 65, 50, 39, 33, 35, 20, 24, 14, 12, 10, 9, 11, 6, 7, 13, 5]
 REAL_P_DOT_N_SUM = 1112
+
 
 class Star:
     def __init__(self, chi, P, chi_dot, P_dot, B12):
@@ -41,6 +43,7 @@ class Star:
             self.chi_dot = -10e-15 * self.B12 ** 2 / self.P / self.P * math.sin(self.chi) * math.cos(self.chi)
         self.P += self.P_dot * DT
         self.chi += self.chi_dot * DT
+        # self.B12 = self.B12 * math.exp(-DT / (B_TAU * 31536000))
         # print(self.P, self.chi, self.P_dot, self.chi_dot)
 
 
@@ -50,27 +53,26 @@ def create_star():
         P = random.triangular(0.03, 1.2, 0.6)
         # B12 = random.uniform(1, 10)
         B12 = random.triangular(0.1, 8, 1.5)
-        return Star(chi, P, 0.01, 0.01, B12)
     elif MODEL == "MGD":
         P = random.uniform(0.03, 1.0)
         chi = math.acos(random.uniform(0, 1))
         B12 = random.triangular(0.1, 8, 1.5)
+    return Star(chi, P, 0.01, 0.01, B12)
 
 
 def check_death_line(star):
     """
     return true if pulsar is alive
     """
-    if star.chi < math.pi / 2 and star.Q() < 1:  # and (math.cos(star.chi) ** 0.4667) >= star.P * (A ** 0.9333) * (star.B12 ** 0.5333):
+    if (0 <= star.chi < math.pi / 2) and star.Q() < 1:  # and (math.cos(star.chi) ** 0.4667) >= star.P * (A ** 0.9333) * (star.B12 ** 0.5333):
         return True
     return False
 
 
 def show_death_line(B12):
-    if MODEL == "BGI":
-        chi_arr = np.arange(0, np.pi / 2, 0.01)
-        P_arr = np.cos(chi_arr) ** (7 / 15) / A ** (14 / 15) / B12 ** (-8/15)
-        plt.plot(P_arr, chi_arr)
+    chi_arr = np.arange(0, np.pi / 2, 0.01)
+    P_arr = np.cos(chi_arr) ** (7 / 15) / A ** (14 / 15) / B12 ** (-8/15)
+    plt.plot(P_arr, chi_arr)
 
 
 def plot_P_chi(star_set):
@@ -96,7 +98,6 @@ def plot_chi_N(star_set, P_min, P_max):
     star_list = list(star_set)
     delta_chi = 0.05  # steps on chi axe
     M = int(np.ceil(np.pi / 2 / delta_chi)) # number of steps on shi axe
-    print(M)
     N_chi = np.zeros(M)
     for i in range(len(star_list)):
         if P_min <= star_list[i].P <= P_max:
@@ -132,6 +133,10 @@ def plot_P_N(star_set, chi_min, chi_max, P_max, vis=True, normalisation=True):
         label = "N(P)_calculated_visual"
     else:
         label = "N(P)_calculated"
+    if MODEL == "BGI":
+        label += "_BGI"
+    elif MODEL == "MGD":
+        label += "_MGD"
     plt.scatter(np.arange(0.0, M * delta_P, delta_P), N_P, label=label)
 
 
@@ -164,6 +169,10 @@ def plot_P_dot_N(star_set, chi_min, chi_max, vis=True, normalisation=True):
         label = "N(P_dot)_calculated_visual"
     else:
         label = "N(P_dot)_calculated"
+    if MODEL == "BGI":
+        label += "_BGI"
+    elif MODEL == "MGD":
+        label += "_MGD"
     plt.scatter(np.arange(0.0, M * delta_P_dot, delta_P_dot), N_P_dot, label=label)
 
 
@@ -191,7 +200,7 @@ def main():
     for i in range(STEPS_NUMBER):
         if i % 10 == 0:
             print("STEP", i, "OUT OF", STEPS_NUMBER)
-        for j in range(BGI_BIRTH_COEFFICIENT):
+        for j in range(BIRTH_COEFFICIENT):
             star = create_star()
             if check_death_line(star):
                 star_set.add(star)
@@ -212,7 +221,7 @@ def main():
     # plot_P_dot_N(star_set, 0.0, np.pi / 2, vis=True)
     plt.legend()
     # show_death_line(1)
-    # plt.savefig("N(P_dot)both.png")
+    plt.savefig("N(P)_BGI2.png")
     plt.show()
 
 
