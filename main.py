@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 MODEL = "BGI"
 STEPS_NUMBER = 1000  # 1000
-BIRTH_COEFFICIENT = 1000  # 400
+BIRTH_COEFFICIENT = 400  # 400
 # BGI constants
 # ##############
 EPS = 0.02
@@ -51,6 +51,7 @@ def create_star():
     if MODEL == "BGI":
         chi = random.uniform(0.001, math.pi / 2.0)
         P = random.triangular(0.03, 1.2, 0.6)
+        # P = random.triangular(0.03, 0.5, 0.3)
         # B12 = random.uniform(1, 10)
         B12 = random.triangular(0.1, 8, 1.5)
     elif MODEL == "MGD":
@@ -221,7 +222,7 @@ def main():
     # plot_P_dot_N(star_set, 0.0, np.pi / 2, vis=True)
     plt.legend()
     # show_death_line(1)
-    plt.savefig("N(P)_BGI2.png")
+    plt.savefig("N(P)_BGI3.png")
     plt.show()
 
 
