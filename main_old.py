@@ -22,38 +22,28 @@ W_0 = 3 * math.pi / 180
 
 
 # birth distribution functions
-def P_BGI(P):
-    return P**0.65
+def P_BGI():
+    pass
 
 
-def P_MGD(P):
-    return P**0.65
+def P_MGD():
+    pass
 
 
-def chi_BGI(chi):
-    return 1
+def chi_BGI():
+    pass
 
 
-def chi_MGD(chi):
-    return np.sin(chi)
+def chi_MGD():
+    pass
 
 
-def B_BGI(B):
-    if 0.1 < B < 1.5:
-        return (B - 0.1) / 1.4
-    elif 1.5 < B < 8:
-        return (8 - B) / 6.5
-    else:
-        return 0
+def B_BGI():
+    pass
 
 
-def B_MGD(B):
-    if 0.1 < B < 1.5:
-        return (B - 0.1) / 1.4
-    elif 1.5 < B < 8:
-        return (8 - B) / 6.5
-    else:
-        return 0
+def B_MGD():
+    pass
 
 
 class rand_distribution_generator:
@@ -122,24 +112,21 @@ class Star:
         # print(self.P, self.chi, self.P_dot, self.chi_dot)
 
 
-def create_star(P_dist, chi_dist, B_dist):
-    P = P_dist.get_rand_value()
-    chi = chi_dist.get_rand_value()
-    B12 = B_dist.get_rand_value()
-    # if MODEL == "BGI":
-    #     chi = random.uniform(0.001, math.pi / 2.0)
-    #     P = (0.03 ** 1.65 + random.uniform(0, 1) * (1.2 ** 1.65 - 0.03 ** 1.65)) ** (1 / 1.65)
-    #     # P = random.triangular(0.03, 1.2, 0.6)
-    #     # P = random.triangular(0.03, 0.5, 0.3)
-    #     # B12 = random.uniform(1, 10)
-    #     B12 = random.triangular(0.1, 8, 1.5)
-    # elif MODEL == "MGD":
-    #     # P = random.uniform(0.03, 1.0)
-    #     P = (0.03 ** 1.65 + random.uniform(0, 1) * (0.5 ** 1.65 - 0.03 ** 1.65)) ** (1 / 1.65)
-    #     # P_gen = rand_distribution_generator(lambda x: x ** 0.65, 0.03, 0.5)
-    #     # P = P_gen.get_rand_value()
-    #     chi = math.acos(random.uniform(0, 1))
-    #     B12 = random.triangular(0.1, 8, 1.5)
+def create_star():
+    if MODEL == "BGI":
+        chi = random.uniform(0.001, math.pi / 2.0)
+        P = (0.03 ** 1.65 + random.uniform(0, 1) * (1.2 ** 1.65 - 0.03 ** 1.65)) ** (1 / 1.65)
+        # P = random.triangular(0.03, 1.2, 0.6)
+        # P = random.triangular(0.03, 0.5, 0.3)
+        # B12 = random.uniform(1, 10)
+        B12 = random.triangular(0.1, 8, 1.5)
+    elif MODEL == "MGD":
+        # P = random.uniform(0.03, 1.0)
+        P = (0.03 ** 1.65 + random.uniform(0, 1) * (0.5 ** 1.65 - 0.03 ** 1.65)) ** (1 / 1.65)
+        # P_gen = rand_distribution_generator(lambda x: x ** 0.65, 0.03, 0.5)
+        # P = P_gen.get_rand_value()
+        chi = math.acos(random.uniform(0, 1))
+        B12 = random.triangular(0.1, 8, 1.5)
     return Star(chi, P, 0.01, 0.01, B12)
 
 
@@ -147,7 +134,8 @@ def check_death_line(star):
     """
     return true if pulsar is alive
     """
-    if (0 <= star.chi < math.pi / 2) and star.Q() < 1:  # and (math.cos(star.chi) ** 0.4667) >= star.P * (A ** 0.9333) * (star.B12 ** 0.5333):
+    if (
+            0 <= star.chi < math.pi / 2) and star.Q() < 1:  # and (math.cos(star.chi) ** 0.4667) >= star.P * (A ** 0.9333) * (star.B12 ** 0.5333):
         return True
     return False
 
@@ -291,21 +279,12 @@ def count_SP_interpulse_pulsars(star_set, P_min, P_max):
 
 def main():
     star_set = set()
-    # Birth distribution generator
-    if MODEL == "BGI":
-        P_dist = rand_distribution_generator(P_BGI, 0.03, 0.5)
-        chi_dist = rand_distribution_generator(chi_BGI, 0.001, np.pi / 2)
-        B_dist = rand_distribution_generator(B_BGI, 0.1, 8)
-    elif MODEL == "MGD":
-        P_dist = rand_distribution_generator(P_MGD, 0.03, 0.5)
-        chi_dist = rand_distribution_generator(chi_MGD, 0.001, np.pi / 2)
-        B_dist = rand_distribution_generator(B_MGD, 0.1, 8)
     # main cycle
     for i in range(STEPS_NUMBER):
         if i % 10 == 0:
             print("STEP", i, "OUT OF", STEPS_NUMBER)
         for j in range(BIRTH_COEFFICIENT):
-            star = create_star(P_dist, chi_dist, B_dist)
+            star = create_star()
             if check_death_line(star):
                 star_set.add(star)
         live_star_set = set()
