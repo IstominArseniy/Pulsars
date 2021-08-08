@@ -143,6 +143,14 @@ def create_star(P_dist, chi_dist, B_dist):
     return Star(chi, P, 0.01, 0.01, B12)
 
 
+def vis_beam(star):
+    return np.sin(star.chi) * (star.P ** (-0.5))
+
+
+def vis_lum(star):
+    return star.P ** (-1)
+
+
 def check_death_line(star):
     """
     return true if pulsar is alive
@@ -202,7 +210,7 @@ def plot_P_N(star_set, chi_min, chi_max, P_max, vis=True, normalisation=True):
                 if not vis:
                     N_P[j] += 1
                 else:
-                    N_P[j] += 1 * np.sin(star_list[i].chi) * (star_list[i].P ** (-1.5))
+                    N_P[j] += 1 * vis_lum(star_list[i]) * vis_beam(star_list[i])
     # Normalisation
     N_sum = 0
     if normalisation:
@@ -240,7 +248,7 @@ def plot_P_dot_N(star_set, chi_min, chi_max, vis=True, normalisation=True):
                 if not vis:
                     N_P_dot[j] += 1
                 else:
-                    N_P_dot[j] += 1 * np.sin(star_list[i].chi) * (star_list[i].P ** (-1.5))
+                    N_P_dot[j] += 1 * vis_lum(star_list[i]) * vis_beam(star_list[i])
     # normalisation
     N_sum = 0
     if normalisation:
@@ -326,7 +334,7 @@ def main():
     # plot_P_dot_N(star_set, 0.0, np.pi / 2, vis=True)
     plt.legend()
     # show_death_line(1)
-    plt.savefig("N(P)_MGD_new_P_distribution2.png")
+   #  plt.savefig("N(P)_MGD_new_P_distribution2.png")
     plt.show()
 
 
