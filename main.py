@@ -2,7 +2,8 @@ import math
 import random
 import numpy as np
 from matplotlib import pyplot as plt
-MODEL = "BGI"
+
+MODEL = "MGD"
 STEPS_NUMBER = 1000  # 1000
 BIRTH_COEFFICIENT = 400  # 400
 # BGI constants
@@ -17,6 +18,71 @@ REAL_P_NUMBERS = [64, 179, 232, 258, 223, 220, 165, 125, 124, 102, 88, 58, 91, 6
 REAL_P_N_SUM = 2178
 REAL_P_DOT_NUMBERS = [242, 265, 161, 91, 65, 50, 39, 33, 35, 20, 24, 14, 12, 10, 9, 11, 6, 7, 13, 5]
 REAL_P_DOT_N_SUM = 1112
+W_0 = 3 * math.pi / 180
+
+
+# birth distribution functions
+def P_BGI():
+    pass
+
+
+def P_MGD():
+    pass
+
+
+def chi_BGI():
+    pass
+
+
+def chi_MGD():
+    pass
+
+
+def B_BGI():
+    pass
+
+
+def B_MGD():
+    pass
+
+
+
+class rand_distribution_generator:
+    def __init__(self, func, start, stop):
+        self.func = func
+        self.start = start
+        self.stop = stop
+        self.val_number = 1000
+        self.values = []
+        for i in range(self.val_number):
+            self.values.append(func(self.start + (self.stop - self.start) / self.val_number * i))
+        self.sums = []
+        cr_sum = 0
+        total_sum = 0
+        for i in range(self.val_number):
+            total_sum += self.values[i]
+        for i in range(self.val_number):
+            self.sums.append(cr_sum / total_sum)
+            cr_sum += self.values[i]
+
+    @staticmethod
+    def binary_search(list_of_data, x):
+        l = 0
+        r = len(list_of_data) - 1
+        while r - l > 1:
+            cr = round((r + l) / 2)
+            if list_of_data[cr] <= x:
+                l = cr
+            else:
+                r = cr
+        if x - list_of_data[l] < list_of_data[r] - x:
+            return l
+        else:
+            return r
+
+    def get_rand_value(self):
+        g = random.uniform(0, 1)
+        return self.start + self.binary_search(self.sums, g) / self.val_number * (self.stop - self.start)
 
 
 class Star:
@@ -50,12 +116,16 @@ class Star:
 def create_star():
     if MODEL == "BGI":
         chi = random.uniform(0.001, math.pi / 2.0)
-        P = random.triangular(0.03, 1.2, 0.6)
+        P = (0.03 ** 1.65 + random.uniform(0, 1) * (1.2 ** 1.65 - 0.03 ** 1.65)) ** (1 / 1.65)
+        # P = random.triangular(0.03, 1.2, 0.6)
         # P = random.triangular(0.03, 0.5, 0.3)
         # B12 = random.uniform(1, 10)
         B12 = random.triangular(0.1, 8, 1.5)
     elif MODEL == "MGD":
-        P = random.uniform(0.03, 1.0)
+        # P = random.uniform(0.03, 1.0)
+        P = (0.03 ** 1.65 + random.uniform(0, 1) * (0.5 ** 1.65 - 0.03 ** 1.65)) ** (1 / 1.65)
+        # P_gen = rand_distribution_generator(lambda x: x ** 0.65, 0.03, 0.5)
+        # P = P_gen.get_rand_value()
         chi = math.acos(random.uniform(0, 1))
         B12 = random.triangular(0.1, 8, 1.5)
     return Star(chi, P, 0.01, 0.01, B12)
@@ -65,14 +135,15 @@ def check_death_line(star):
     """
     return true if pulsar is alive
     """
-    if (0 <= star.chi < math.pi / 2) and star.Q() < 1:  # and (math.cos(star.chi) ** 0.4667) >= star.P * (A ** 0.9333) * (star.B12 ** 0.5333):
+    if (
+            0 <= star.chi < math.pi / 2) and star.Q() < 1:  # and (math.cos(star.chi) ** 0.4667) >= star.P * (A ** 0.9333) * (star.B12 ** 0.5333):
         return True
     return False
 
 
 def show_death_line(B12):
     chi_arr = np.arange(0, np.pi / 2, 0.01)
-    P_arr = np.cos(chi_arr) ** (7 / 15) / A ** (14 / 15) / B12 ** (-8/15)
+    P_arr = np.cos(chi_arr) ** (7 / 15) / A ** (14 / 15) / B12 ** (-8 / 15)
     plt.plot(P_arr, chi_arr)
 
 
@@ -98,7 +169,7 @@ def plot_chi_N(star_set, P_min, P_max):
     """
     star_list = list(star_set)
     delta_chi = 0.05  # steps on chi axe
-    M = int(np.ceil(np.pi / 2 / delta_chi)) # number of steps on shi axe
+    M = int(np.ceil(np.pi / 2 / delta_chi))  # number of steps on shi axe
     N_chi = np.zeros(M)
     for i in range(len(star_list)):
         if P_min <= star_list[i].P <= P_max:
@@ -146,7 +217,7 @@ def plot_P_dot_N(star_set, chi_min, chi_max, vis=True, normalisation=True):
     # P_dot_max = 0
     # for i in range(len(star_list)):
     #     P_dot_max = max(P_dot_max, star_list[i].P_dot)
-    P_dot_max = 4e-14 # remove!
+    P_dot_max = 4e-14  # remove!
     delta_P_dot = 0.2e-14
     M = int(np.ceil(P_dot_max / delta_P_dot))
     print(P_dot_max, delta_P_dot)
@@ -195,6 +266,18 @@ def plot_real_P_dot_data():
     plt.scatter(P, N, label="N(P_dot)_real")
 
 
+def count_SP_interpulse_pulsars(star_set, P_min, P_max):
+    star_list = list(star_set)
+    total_number = 0
+    interpulse_pulsars_number = 0
+    for star in star_list:
+        if star.P >= P_min and star.P <= P_max:
+            total_number += 1
+            if star.chi <= W_0 / (star.P ** 0.5):
+                interpulse_pulsars_number += 1
+    return interpulse_pulsars_number / total_number
+
+
 def main():
     star_set = set()
     # main cycle
@@ -216,25 +299,15 @@ def main():
     # plot_real_P_dot_data()
     # plot_P_chi(star_set)
     # plot_chi_N(star_set, 0.1, 1.0)
+    print(count_SP_interpulse_pulsars(star_set, 0.03, 0.5))
     plot_P_N(star_set, 0.0, np.pi / 2, 3, vis=True)
     # plot_P_N(star_set, 0.0, np.pi / 2, 3, vis=False)
     plot_real_P_data()
     # plot_P_dot_N(star_set, 0.0, np.pi / 2, vis=True)
     plt.legend()
     # show_death_line(1)
-    plt.savefig("N(P)_BGI3.png")
+    plt.savefig("N(P)_MGD_new_P_distribution2.png")
     plt.show()
 
 
 main()
-
-
-
-
-
-
-
-
-
-
-
