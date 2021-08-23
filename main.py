@@ -153,12 +153,13 @@ def create_star(P_dist, chi_dist, B_dist):
 
 
 def vis_beam(star):
+    # this function is normalised and is giving an exact probability
     # return np.sin(star.chi) * (star.P ** (-0.5))
     W = W_0 / (star.P ** 0.5)
     if star.chi >= W:
-        return (np.cos(star.chi - W) - np.cos(star.chi + W)) / 4 / np.pi
+        return np.cos(star.chi - W) - np.cos(star.chi + W)
     else:
-        return (1 - np.cos(star.chi + W)) / 4 / np.pi
+        return 1 - np.cos(star.chi + W)
 
 
 def vis_lum(star):
@@ -329,7 +330,8 @@ def count_SP_interpulse_pulsars(star_set, P_min, P_max):
     interpulse_pulsars_number = 0
     for star in star_list:
         if star.P >= P_min and star.P <= P_max:
-            total_number += (np.cos(star.chi - W_0 / (star.P ** 0.5)) - np.cos(star.chi + W_0 / (star.P ** 0.5)))
+            # total_number += (np.cos(star.chi - W_0 / (star.P ** 0.5)) - np.cos(star.chi + W_0 / (star.P ** 0.5)))
+            total_number += vis_beam(star)
             interpulse_pulsars_number += get_SP_probability(star)
     return interpulse_pulsars_number / total_number
 
