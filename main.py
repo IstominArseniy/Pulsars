@@ -4,8 +4,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 MODEL = "MGD"
-STEPS_NUMBER = 1000  # 1000
-BIRTH_COEFFICIENT = 400  # 400
+STEPS_NUMBER = 1500  # 1000
+BIRTH_COEFFICIENT = 600  # 400
 # BGI constants
 # ##############
 EPS = 0.02
@@ -13,7 +13,7 @@ A = 1.0
 D = 0.75
 DT = 1e12
 # ##############
-B_TAU = 1e6  # in years
+B_TAU = 1e10  # in years
 REAL_P_NUMBERS = [64, 179, 232, 258, 223, 220, 165, 125, 124, 102, 88, 58, 91, 64, 38, 32, 35, 30, 26, 24, 0]
 REAL_P_N_SUM = 2178
 REAL_P_DOT_NUMBERS = [242, 265, 161, 91, 65, 50, 39, 33, 35, 20, 24, 14, 12, 10, 9, 11, 6, 7, 13, 5]
@@ -39,21 +39,30 @@ def chi_MGD(chi):
 
 
 def B_BGI(B):
-    if 0.1 < B < 1.5:
-        return (B - 0.1) / 1.4
-    elif 1.5 < B < 8:
-        return (8 - B) / 6.5
+    # if 0.1 < B < 1.5:
+    #     return (B - 0.1) / 1.4
+    # elif 1.5 < B < 8:
+    #     return (8 - B) / 6.5
+    # else:
+    #     return 0
+
+    if B < 25:
+        return B ** (-0.49)
     else:
-        return 0
+        return B ** (-1.20) * 9.83
 
 
 def B_MGD(B):
-    if 0.1 < B < 1.5:
-        return (B - 0.1) / 1.4
-    elif 1.5 < B < 8:
-        return (8 - B) / 6.5
+    if B < 5.1:
+        return B ** (-0.76)
     else:
-        return 0
+        return B ** (-1.76) * 5.1
+    # if 0.1 < B < 1.5:
+    #     return (B - 0.1) / 1.4
+    # elif 1.5 < B < 8:
+    #     return (8 - B) / 6.5
+    # else:
+    #     return 0
 
 
 class rand_distribution_generator:
@@ -144,11 +153,22 @@ def create_star(P_dist, chi_dist, B_dist):
 
 
 def vis_beam(star):
-    return np.sin(star.chi) * (star.P ** (-0.5))
+    # return np.sin(star.chi) * (star.P ** (-0.5))
+    W = W_0 / (star.P ** 0.5)
+    if star.chi >= W:
+        return (np.cos(star.chi - W) - np.cos(star.chi + W)) / 4 / np.pi
+    else:
+        return (1 - np.cos(star.chi + W)) / 4 / np.pi
 
 
 def vis_lum(star):
-    return star.P ** (-1)
+    # return star.P ** (-1)
+    W_tot = 0
+    if MODEL == "BGI":
+        W_tot = star.B12 ** 2 * star.P ** (-4) * star.Q() * (np.cos(star.chi) ** 2)
+    elif MODEL == "MGD":
+        W_tot = star.B12 ** 2 * star.P ** (-4) * (1 + np.sin(star.chi) ** 2)
+    return star.Q() ** 2.1 * W_tot
 
 
 def check_death_line(star):
@@ -285,15 +305,32 @@ def plot_real_P_dot_data():
     plt.scatter(P, N, label="N(P_dot)_real")
 
 
+def get_SP_probability(star):
+    lower_bound_angel = np.pi / 3
+    upper_bound_angel = 2 * np.pi / 3
+    upper_bound = np.cos(lower_bound_angel)
+    lower_bound = np.cos(upper_bound_angel)
+    W = W_0 / (star.P ** 0.5)
+    Discr = star.chi ** 2 * upper_bound ** 2 - (star.chi ** 2 - W ** 2)  # discriminant
+    if star.chi >= W:
+        if Discr >= 0:
+            return np.cos(star.chi * upper_bound - Discr ** 0.5) - np.cos(star.chi * upper_bound + Discr ** 0.5)
+        else:
+            return 0
+    else: 
+        ksi1 = star.chi * upper_bound + D ** 0.5
+        ksi2 = star.chi * lower_bound + D ** 0.5
+        return np.cos(ksi2) - np.cos(ksi1)
+
+    
 def count_SP_interpulse_pulsars(star_set, P_min, P_max):
     star_list = list(star_set)
     total_number = 0
     interpulse_pulsars_number = 0
     for star in star_list:
         if star.P >= P_min and star.P <= P_max:
-            total_number += 1
-            if star.chi <= W_0 / (star.P ** 0.5):
-                interpulse_pulsars_number += 1
+            total_number += (np.cos(star.chi - W_0 / (star.P ** 0.5)) - np.cos(star.chi + W_0 / (star.P ** 0.5)))
+            interpulse_pulsars_number += get_SP_probability(star)
     return interpulse_pulsars_number / total_number
 
 
@@ -303,11 +340,11 @@ def main():
     if MODEL == "BGI":
         P_dist = rand_distribution_generator(P_BGI, 0.03, 0.5)
         chi_dist = rand_distribution_generator(chi_BGI, 0.001, np.pi / 2)
-        B_dist = rand_distribution_generator(B_BGI, 0.1, 8)
+        B_dist = rand_distribution_generator(B_BGI, 1, 10)
     elif MODEL == "MGD":
         P_dist = rand_distribution_generator(P_MGD, 0.03, 0.5)
         chi_dist = rand_distribution_generator(chi_MGD, 0.001, np.pi / 2)
-        B_dist = rand_distribution_generator(B_MGD, 0.1, 8)
+        B_dist = rand_distribution_generator(B_MGD, 1, 10)
     # main cycle
     for i in range(STEPS_NUMBER):
         if i % 10 == 0:
@@ -334,7 +371,7 @@ def main():
     # plot_P_dot_N(star_set, 0.0, np.pi / 2, vis=True)
     plt.legend()
     # show_death_line(1)
-   #  plt.savefig("N(P)_MGD_new_P_distribution2.png")
+    # plt.savefig("N(P)_BGI_old_beam_old_lum.png")
     plt.show()
 
 
